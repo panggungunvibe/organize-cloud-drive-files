@@ -86,7 +86,7 @@ export async function loadPlan(dir) {
   const p = validatePlan(await readJSON(privatePath(dir, 'plan')));
   return { plan: p, planDigest: digest(p) };
 }
-export function viewPlan(plan) {
+export function viewPlan(plan, covers = {}) {
   const groups = new Map();
   const stats = { total: plan.items.length, photo: 0, video: 0, other: 0, bytes: 0, unknownSize: 0 };
   const items = plan.items.map(i => {
@@ -94,7 +94,7 @@ export function viewPlan(plan) {
     const key = JSON.stringify(i.destination);
     if (!groups.has(key)) groups.set(key, { key, path: i.destination, count: 0 });
     groups.get(key).count++;
-    return { id: i.id, filename: i.filename, newName: i.newName, media: i.media, destination: i.destination, group: key, thumbnail: i.thumbnail };
+    return { id: i.id, filename: i.filename, newName: i.newName, media: i.media, destination: i.destination, group: key, thumbnail: i.thumbnail, coverKey: covers[i.id] };
   });
   return { title: plan.title, mode: plan.mode, method: plan.method, source: { path: plan.source.path }, target: { path: plan.target.path }, rules: plan.rules, ready: plan.validation.ready && plan.validation.executionSupported, stats, items, groups: [...groups.values()] };
 }

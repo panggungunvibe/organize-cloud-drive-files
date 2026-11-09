@@ -54,7 +54,7 @@ export async function createOrganizer(dir, options = {}) {
       const pathname = new URL(req.url, `http://${req.headers.host}`).pathname;
       if (req.method === 'GET' && pathname === '/api/view') {
         const { plan, planDigest } = await loadPlan(dir);
-        return json(res, 200, { ...viewPlan(plan), planDigest, csrf: config.csrf, bridge: { available: bridge.available, reason: bridge.reason }, status: await readJSON(privatePath(dir, 'status')) });
+        return json(res, 200, { ...viewPlan(plan, await readJSON(privatePath(dir, 'covers'), {})), planDigest, csrf: config.csrf, bridge: { available: bridge.available, reason: bridge.reason }, status: await readJSON(privatePath(dir, 'status')) });
       }
       if (req.method === 'GET' && pathname === '/api/status') {
         const status = await readJSON(privatePath(dir, 'status'));
@@ -76,7 +76,7 @@ export async function createOrganizer(dir, options = {}) {
       }
       if (req.method !== 'GET') return json(res, 405, { error: '不支持此方法' });
       const relative = pathname === '/' ? 'index.html' : decodeURIComponent(pathname.slice(1));
-      if (!['index.html', 'app.js', 'style.css'].includes(relative) && !relative.startsWith('thumbs/')) return json(res, 404, { error: '未找到' });
+      if (!['index.html', 'app.js', 'gallery.js', 'style.css'].includes(relative) && !relative.startsWith('thumbs/')) return json(res, 404, { error: '未找到' });
       const file = await safeAsset(path.join(dir, 'public'), relative), type = types[path.extname(file)];
       if (!type) return json(res, 404, { error: '不支持此资源' });
       res.writeHead(200, { 'Content-Type': type }); res.end(await readFile(file));

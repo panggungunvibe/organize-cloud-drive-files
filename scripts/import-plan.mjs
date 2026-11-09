@@ -1,12 +1,18 @@
 import path from 'node:path';
 import { args, required, readJSON, writeJSON, privatePath, validatePlan, safeAsset, digest, now, withLock, isMain } from './lib.mjs';
-import { unlink } from 'node:fs/promises';
+import { unlink, readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 
 export async function importPlan(dir, plan) {
   validatePlan(plan);
-  for (const i of plan.items) if (i.thumbnail) await safeAsset(path.join(dir, 'public'), i.thumbnail);
+  const covers = {};
+  for (const i of plan.items) if (i.thumbnail) {
+    const file = await safeAsset(path.join(dir, 'public'), i.thumbnail);
+    covers[i.id] = createHash('sha256').update(await readFile(file)).digest('hex');
+  }
   return withLock(dir, async () => {
     const old = await readJSON(privatePath(dir, 'plan'), null);
+    await writeJSON(privatePath(dir, 'covers'), covers);
     if (old && digest(old) === digest(plan)) return { changed: false, planDigest: digest(plan) };
     const status = await readJSON(privatePath(dir, 'status'), null);
     if (await readJSON(privatePath(dir, 'approval'), null) || (status && status.status !== 'ready')) throw new Error('工作区已有确认或执行记录；不能覆盖来重新执行，请核对原请求并使用新工作区');

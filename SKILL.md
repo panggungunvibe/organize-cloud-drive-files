@@ -41,6 +41,8 @@ node <skill-root>/scripts/serve.mjs --workspace <absolute-task-web-dir>
 
 用实际输出的 URL 打开页面。目录数量与飞行目标必须来自映射，不能估算或平均分配。素材多时选几十到一百多张不重复的真实封面铺满星球，并说明这是代表预览。同一素材不重复贴图凑密度；缩略图不足时显示文件卡片，不用演示图代替用户素材。
 
+模板已包含原网站确认过的布局、密集照片球和封面飞入两侧最末级文件夹的动画；直接填入当前使用者的数据，保留这一展示流程。不要另起一套占位图演示来代替成品。适配要求见 [references/ui-template.md](references/ui-template.md)。
+
 页面依次展示：盘点和逻辑、目录方案、密集素材星球向两侧最末级文件夹归档的动画。动画结束后才出现「正式确认以上归类，开始整理网盘」。前两步和重播只操作页面。
 
 ## 4. 网页确认通知 Agent
@@ -70,4 +72,4 @@ node <skill-root>/scripts/serve.mjs --workspace <absolute-task-web-dir>
 
 `npm test` 仅测试虚构数据和本地服务，不连接网盘。
 
-`node scripts/demo.mjs --dir <absolute-demo-dir>` 生成标注清楚的离线演示；演示确认按钮没有网盘执行能力。不要把它当成真实执行证明。
+`node scripts/demo.mjs --media-dir <用户自己的本地相册> --dir <absolute-preview-dir>` 使用真实照片预览同一界面，沿用已有子目录作为分组；此模式不做 AI 分类，也不能操作网盘。正式网盘整理始终使用 Agent 分析后的方案。

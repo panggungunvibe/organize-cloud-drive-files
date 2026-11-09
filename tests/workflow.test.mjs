@@ -9,6 +9,8 @@ import { importPlan } from '../scripts/import-plan.mjs';
 import { createOrganizer } from '../scripts/serve.mjs';
 import { parseResult, updateStatus } from '../scripts/status.mjs';
 import { readJSON, privatePath, validatePlan, digest, writeJSON } from '../scripts/lib.mjs';
+import { buildLeaves, splitLeaves, selectPreviewAssets, globePlacement } from '../assets/web/gallery.js';
+import { createLocalPreview } from '../scripts/demo.mjs';
 
 const plan = () => ({version:1,title:'测试相册',mode:'live',method:'move_in_place',source:{fid:'root',path:'/样例'},target:{fid:'root',path:'/样例'},rules:['按内容归类'],validation:{ready:true,providerDigest:'provider-check-1',proposalPath:'/fictional-task/proposal.json',taskDir:'/fictional-task',executionSupported:true},items:[{id:'one',fid:'root|f1',parentFid:'root',filename:'a.jpg',media:'photo',size:null,destination:['城市 A','照片','风景']},{id:'two',fid:'root|f2',parentFid:'root',filename:'b.mp4',media:'video',size:1024,destination:['未知','视频','片段']}]});
 const raw = (overrides={}) => ({code:0,msg:'成功',action:'file_organize_apply',type:'result',data:{task_dir:'/fictional-task',operations_finished:true,summary:{success_count:4,fail_count:0,skip_count:0},detail_url:'https://example.com/result',...overrides}});
@@ -35,6 +37,7 @@ test('identity, collisions, traversal and missing validation are rejected',()=>{
 test('public view strips identities; private files and foreign host are inaccessible',async t=>{
   const f=await fixture(t);assert.equal(f.view.items.length,2);assert.equal(f.view.items[0].fid,undefined);assert.equal(f.view.source.fid,undefined);assert.equal(f.view.stats.unknownSize,1);
   assert.equal((await fetch(f.url+'/private/plan.json')).status,404);
+  for (const resource of ['/app.js','/gallery.js','/style.css']) assert.equal((await fetch(f.url+resource)).status,200);
   const foreignHostStatus=await new Promise((resolve,reject)=>{const req=http.get(f.url+'/api/view',{headers:{Host:'evil.example'}},res=>{res.resume();resolve(res.statusCode);});req.on('error',reject);});
   assert.equal(foreignHostStatus,403);
   assert.equal((await f.confirm({}, {Origin:'https://evil.example'})).status,403);
@@ -91,4 +94,26 @@ test('external symlink thumbnails are neither imported nor served',async t=>{
   await symlink(secret,path.join(f.dir,'public/thumbs','outside.svg'));
   assert.equal((await fetch(f.url+'/thumbs/outside.svg')).status,409);
   const p=plan();p.items[0].thumbnail='thumbs/outside.svg';await assert.rejects(importPlan(f.dir,p),/超出/);
+});
+
+test('original gallery uses exact destinations and supports albums without video',()=>{
+  const items=Array.from({length:230},(_,i)=>({id:'f'+i,filename:'same-name.jpg',media:'photo',destination:i%5===0?['少量目录','人物']:['大目录','风景'],thumbnail:'thumbs/'+i+'.jpg',coverKey:i<2?'same-cover':String(i)}));
+  const leaves=buildLeaves(items);assert.equal(leaves.reduce((n,l)=>n+l.count,0),230);
+  assert.equal(leaves[0].count,46);assert.equal(leaves[1].count,184);
+  const split=splitLeaves(leaves);assert.equal(split.left.length+split.right.length,2);assert.ok(!split.rightTitle.includes('视频'));
+  const sample=selectPreviewAssets(items);assert.equal(sample.length,180);assert.equal(new Set(sample.map(i=>i.coverKey)).size,180);
+  assert.equal(new Set(sample.map(i=>JSON.stringify(i.destination))).size,2);
+  for(let i=0;i<sample.length;i++){const p=globePlacement(i,sample.length);assert.ok(p.x>=0&&p.x<=100&&p.y>=0&&p.y<=100);}
+});
+test('local preview loads only supplied media and preserves real counts and filenames',async t=>{
+  const root=await mkdtemp(path.join(os.tmpdir(),'own-album-test-'));t.after(()=>rm(root,{recursive:true,force:true}));
+  const album=path.join(root,'my-photos'),workspace=path.join(root,'web');await mkdir(path.join(album,'已有分类'),{recursive:true});
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aXKsAAAAASUVORK5CYII=','base64');
+  await writeFile(path.join(album,'已有分类','one.png'),png);await writeFile(path.join(album,'two.png'),png);
+  await writeFile(path.join(album,'readme.txt'),'not a media file');
+  await createLocalPreview(workspace,album);
+  const p=await readJSON(privatePath(workspace,'plan'));assert.equal(p.mode,'demo');assert.equal(p.items.length,2);
+  assert.deepEqual(p.items.map(i=>i.filename).sort(),['one.png','two.png']);assert.ok(p.items.every(i=>i.media==='photo'));
+  const covers=await readJSON(privatePath(workspace,'covers'));assert.equal(Object.values(covers)[0],Object.values(covers)[1]);
+  assert.equal(selectPreviewAssets(p.items.map(i=>({...i,coverKey:covers[i.id]}))).length,1);
 });

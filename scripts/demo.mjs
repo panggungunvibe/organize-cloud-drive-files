@@ -1,28 +1,52 @@
-import { writeFile } from 'node:fs/promises';
+import { readdir, cp, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { args, isMain } from './lib.mjs';
+import { args, isMain, required } from './lib.mjs';
 import { initWorkspace } from './init-workspace.mjs';
 import { importPlan } from './import-plan.mjs';
 
-export async function createDemo(dir) {
-  dir = path.resolve(dir);
-  await initWorkspace(dir, { title: '散落的旅行记忆', bridge: 'manual' });
-  const items = [];
-  for (let i=0;i<144;i++) {
-    const id=`sample-${String(i+1).padStart(3,'0')}`, hue=(i*137.508)%360;
-    // Every thumbnail is a distinct numbered abstract composition, never a personal photo.
-    const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" fill="hsl(${hue},27%,${42+i%25}%)"/><circle cx="${20+i*7%130}" cy="${20+i*11%100}" r="${18+i%28}" fill="hsl(${(hue+40)%360},40%,80%)"/><path d="M0 160 L${i*13%150} ${55+i%70} L160 160Z" fill="hsl(${(hue+180)%360},18%,28%)"/><text x="9" y="142" font-family="monospace" font-size="13" fill="white">SAMPLE ${i+1}</text></svg>`;
-    await writeFile(path.join(dir,'public/thumbs',id+'.svg'),svg);
-    const media=i%9===0?'video':i%23===0?'other':'photo',city=['城市 A','海岸 B','未知'][i%3],theme=['人物','建筑','自然风景','日常片段'][Math.floor(i/3)%4];
-    items.push({id,fid:'fictional-'+id,parentFid:'fictional-root',filename:id+(media==='video'?'.mp4':media==='other'?'.pdf':'.jpg'),media,size:1024000+i*1024,destination:[city,media==='photo'?'照片':media==='video'?'视频':'其他',media==='other'?'资料':theme],thumbnail:'thumbs/'+id+'.svg'});
+const photos = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif']);
+const videos = new Set(['.mp4', '.mov', '.m4v', '.webm', '.mkv']);
+export async function createLocalPreview(dir, mediaDir) {
+  dir = path.resolve(dir); mediaDir = path.resolve(mediaDir);
+  if (dir === mediaDir || dir.startsWith(mediaDir + path.sep)) throw new Error('请将预览工作区放在相册目录外');
+  const files = [];
+  async function walk(root, folders = []) {
+    for (const entry of await readdir(root, { withFileTypes: true })) {
+      if (entry.name.startsWith('.') || entry.isSymbolicLink()) continue;
+      const file = path.join(root, entry.name);
+      if (entry.isDirectory()) await walk(file, [...folders, entry.name]);
+      else if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (photos.has(ext) || videos.has(ext)) files.push({ file, folders, ext, name: entry.name });
+      }
+    }
   }
-  await importPlan(dir,{version:1,title:'散落的旅行记忆',mode:'demo',method:'move_in_place',source:{fid:'fictional-root',path:'/演示相册'},target:{fid:'fictional-root',path:'/演示相册'},rules:['先按可靠的拍摄地点或内容分组；证据不足的放入未知','各地点下分开照片、视频和其他文件','最后按主题归档，保留原文件名'],validation:{ready:true,executionSupported:true},items});
+  await walk(mediaDir);
+  if (!files.length) throw new Error('这个目录中未找到可预览的照片或视频');
+  await initWorkspace(dir, { title: path.basename(mediaDir), bridge: 'manual' });
+  const items = [];
+  for (const [index, f] of files.entries()) {
+    const id = 'local-' + String(index + 1).padStart(5, '0'), media = photos.has(f.ext) ? 'photo' : 'video';
+    const thumbnail = media === 'photo' ? 'thumbs/' + id + f.ext : undefined;
+    if (thumbnail) await cp(f.file, path.join(dir, 'public', thumbnail));
+    items.push({ id, fid: id, parentFid: 'local-preview', filename: f.name, media, size: (await stat(f.file)).size, destination: [...(f.folders.length ? f.folders : ['未分类']), media === 'photo' ? '照片' : '视频'], ...(thumbnail ? { thumbnail } : {}) });
+  }
+  await importPlan(dir, {
+    version: 1, title: path.basename(mediaDir), mode: 'demo', method: 'move_in_place',
+    source: { fid: 'local-preview', path: mediaDir }, target: { fid: 'local-preview', path: mediaDir },
+    rules: ['使用你提供的真实照片与原有子目录预览界面', '照片与视频分开；没有封面的视频显示文件卡片', '本地预览不分析或改动网盘，正式归类由 Agent 读取网盘素材后生成'],
+    validation: { ready: true, executionSupported: true }, items
+  });
   return dir;
 }
-if(isMain(import.meta.url)){
-  const a=args(),dir=await createDemo(a.dir||'.demo');
-  console.log('演示素材已生成，全部为虚构图案，无网盘操作能力。');
-  const {createOrganizer}=await import('./serve.mjs');
-  const server=await createOrganizer(dir);
-  server.listen(a.port?Number(a.port):0,'127.0.0.1',()=>console.log(`演示页面：http://127.0.0.1:${server.address().port}/`));
+if (isMain(import.meta.url)) {
+  const a = args();
+  if (!a['media-dir']) {
+    console.log('请提供自己的真实相册目录：npm run demo -- --media-dir <相册目录>\n仅在本地预览；已有子目录作为预览分组，不代表 AI 已完成分类。');
+  } else {
+    const dir = await createLocalPreview(a.dir || '.demo', required(a, 'media-dir'));
+    const { createOrganizer } = await import('./serve.mjs');
+    const server = await createOrganizer(dir);
+    server.listen(a.port ? Number(a.port) : 0, '127.0.0.1', () => console.log('真实照片本地预览：http://127.0.0.1:' + server.address().port + '/'));
+  }
 }

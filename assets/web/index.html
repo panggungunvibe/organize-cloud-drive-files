@@ -1,29 +1,59 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>整理网盘文件</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f7f9"><title>整理网盘文件</title>
+  <link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script>
+</head>
 <body>
-  <header><a class="brand" href="/">◌ <span>整理网盘文件</span></a><span id="mode">本地工作区</span></header>
-  <main>
-    <div class="intro"><div><p class="eyebrow">A PLACE FOR EVERY MEMORY</p><h1 id="title">正在读取整理方案…</h1><p id="source" class="muted"></p></div><span id="method" class="pill"></span></div>
-    <section class="stats" id="stats" aria-label="素材盘点"></section>
-    <nav aria-label="步骤"><span class="active" data-step="1">01 确认思路</span><span data-step="2">02 查看目录</span><span data-step="3">03 预览与执行</span></nav>
-    <section id="step1" class="panel">
-      <p class="eyebrow">先为回忆找个位置</p><h2>这样整理，可以吗？</h2><p class="muted">先看规划和目录，再观看归档预览。最后一次确认后，Agent 才会真正操作网盘。</p>
-      <ol id="rules" class="rules"></ol><div id="scope" class="scope"></div><button id="logic-next">认可整理思路，查看文件夹 <span>→</span></button>
+<div class="app-shell">
+  <header class="app-header">
+    <div class="brand"><span class="brand-mark">▱</span><div><strong id="album-title">整理网盘文件</strong><span>文件夹整理</span></div></div>
+    <div class="mode-pill"><i></i><span id="mode-label">最终确认后才会整理网盘</span></div>
+  </header>
+  <section class="inventory" id="inventory" aria-label="素材盘点"></section>
+  <nav class="steps" aria-label="整理步骤">
+    <div class="step active" data-step-indicator="1"><b>1</b><span>确认整理逻辑</span></div><i></i>
+    <div class="step" data-step-indicator="2"><b>2</b><span>确认文件夹</span></div><i></i>
+    <div class="step" data-step-indicator="3"><b>3</b><span>预览并整理</span></div>
+  </nav>
+  <main class="workspace">
+    <section class="flow-panel active" data-panel="1" aria-labelledby="logic-title">
+      <div class="panel-copy"><p class="kicker">第一步</p><h1 id="logic-title">先确认，我会怎么整理。</h1><p id="logic-intro">你认可整理思路后，再查看具体会创建哪些文件夹。</p></div>
+      <div class="logic-flow" id="logic-flow" aria-label="整理逻辑"></div>
+      <div class="rule-row" id="rules"></div>
+      <p class="scope-copy" id="scope"></p>
+      <div class="panel-actions end"><button class="button primary" id="confirm-logic">这套逻辑没问题，查看文件夹</button></div>
     </section>
-    <section id="step2" class="panel" hidden>
-      <p class="eyebrow">归档后的样子</p><h2>每一份素材，都有去处。</h2><p id="folder-summary" class="muted"></p><div id="tree" class="tree"></div>
-      <div class="actions"><button id="plan-back" class="secondary">返回调整思路</button><button id="preview">目录没问题，观看整理预览 →</button></div>
+    <section class="flow-panel" data-panel="2" aria-labelledby="folders-title" hidden>
+      <div class="panel-copy split-copy"><div><p class="kicker">第二步</p><h1 id="folders-title">确认最终文件夹。</h1></div><p id="folder-plan-note"></p></div>
+      <div class="folder-plan" id="folder-plan"></div>
+      <div class="review-note"><i>!</i><div><strong id="method-note"></strong><span id="target-note"></span></div></div>
+      <div class="panel-actions between"><button class="button secondary" id="back-to-logic">返回上一步</button><button class="button primary" id="confirm-folders">确认文件夹，预览整理过程</button></div>
     </section>
-    <section id="step3" hidden>
-      <div class="scene-heading"><div><p class="eyebrow">FROM CHAOS TO ORDER</p><h2 id="animation-title">让回忆慢慢归位。</h2></div><button id="replay" class="secondary" hidden>重播预览 ↻</button></div>
-      <p id="sample-note" class="muted"></p>
-      <div id="scene" class="scene"><div id="left-folders" class="folder-column"></div><div id="globe" class="globe"><div class="globe-glow"></div><div id="particles"></div><div class="globe-caption"><b id="preview-count">0</b><span>项素材预览</span></div></div><div id="right-folders" class="folder-column"></div></div>
-      <div class="preview-progress"><div id="progress-bar"></div></div>
-      <div id="final" class="final" hidden><div><h3>预览结束，接下来才是真实整理。</h3><p id="confirm-scope" class="muted"></p></div><button id="confirm">正式确认以上归类，开始整理网盘</button></div>
-      <div id="job" class="job" hidden aria-live="polite"><span class="pill" id="job-label"></span><h3 id="job-phase"></h3><p id="job-counts"></p><p id="job-error"></p><p id="job-notice" class="muted"></p><a id="result-link" target="_blank" rel="noopener noreferrer" hidden>查看网盘整理结果 ↗</a><div id="manual" hidden><p>网页已经保存确认。请将以下指令发给当前 Agent，继续真实整理。</p><textarea id="command" readonly aria-label="发送给 Agent 的指令"></textarea><button id="copy" class="secondary">复制指令</button></div><small id="request"></small></div>
+    <section class="flow-panel sorting-panel" data-panel="3" aria-labelledby="sorting-title" hidden>
+      <div class="sort-heading"><div><p class="kicker">第三步</p><h1 id="sorting-title">整理动画预览</h1><p id="sort-status">正在读取你的素材封面…</p><small id="asset-source-note"></small></div><div class="sort-progress-copy"><strong id="sort-count">0</strong><span id="preview-denominator"></span></div></div>
+      <div class="progress-bar"><i id="sort-progress"></i></div>
+      <section class="cloud-job" id="cloud-job" hidden aria-live="polite">
+        <div class="cloud-job-state"><i></i><div><strong id="cloud-job-title"></strong><span id="cloud-job-message"></span></div></div>
+        <p class="scope-copy" id="cloud-job-counts"></p><p class="cloud-notice" id="cloud-notice" hidden></p>
+        <div class="manual-command" id="manual-command" hidden><p class="scope-copy">确认已保存，请把以下指令发送到当前 Agent，继续真实整理。</p><textarea id="command-text" readonly aria-label="发送给 Agent 的指令"></textarea><button class="button secondary" id="copy-command">复制指令</button></div>
+        <small class="request-label" id="request-label"></small>
+      </section>
+      <div class="sorting-board" id="sorting-board">
+        <section class="leaf-column photo-column" aria-label="左侧最终文件夹"><header><div><i></i><strong id="left-title">照片</strong></div><span id="left-folder-count"></span></header><div class="leaf-list" id="left-destinations"></div></section>
+        <section class="media-orbit" aria-label="待整理素材星球"><div class="orbit-ring ring-one"></div><div class="orbit-ring ring-two"></div><div class="media-globe" id="media-globe"></div><div class="globe-caption"><strong id="remaining-count">0</strong><span>份预览待归类</span></div></section>
+        <section class="leaf-column video-column" aria-label="右侧最终文件夹"><header><div><i></i><strong id="right-title">视频</strong></div><span id="right-folder-count"></span></header><div class="leaf-list" id="right-destinations"></div></section>
+      </div>
+      <p class="preview-note">动画展示代表封面的归档路径；两侧数字为完整方案的素材数。实际网盘进度以 Agent 返回结果为准。</p>
+      <div class="sort-complete" id="sort-complete" hidden>
+        <div class="complete-icon">✓</div><div><strong id="complete-title">整理预览完成</strong><span id="complete-message">确认以上归类后，再正式整理网盘。</span></div>
+        <div class="complete-actions"><a class="result-link" id="cloud-result-link" target="_blank" rel="noreferrer" hidden>在夸克网盘查看结果</a><button class="button primary cloud-commit-button" id="commit-cloud" type="button" hidden>正式确认以上归类，开始整理网盘</button><button class="replay-button" id="replay-sorting" type="button">重播整理动画</button></div>
+      </div>
     </section>
-    <p id="error" class="error" role="alert"></p>
+    <p class="page-error" id="page-error" role="alert"></p>
   </main>
-  <footer>规划 · 预览 · 确认 · 真实归档 <span>你的素材只留在本地工作区和自己的网盘</span></footer>
-</body></html>
+  <footer class="app-footer"><span id="inventory-note">正在读取真实素材</span><span>先确认方案，再预览，最后执行</span></footer>
+</div>
+</body>
+</html>
