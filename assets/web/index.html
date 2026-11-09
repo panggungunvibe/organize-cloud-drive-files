@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>整理网盘文件</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body>
+  <header><a class="brand" href="/">◌ <span>整理网盘文件</span></a><span id="mode">本地工作区</span></header>
+  <main>
+    <div class="intro"><div><p class="eyebrow">A PLACE FOR EVERY MEMORY</p><h1 id="title">正在读取整理方案…</h1><p id="source" class="muted"></p></div><span id="method" class="pill"></span></div>
+    <section class="stats" id="stats" aria-label="素材盘点"></section>
+    <nav aria-label="步骤"><span class="active" data-step="1">01 确认思路</span><span data-step="2">02 查看目录</span><span data-step="3">03 预览与执行</span></nav>
+    <section id="step1" class="panel">
+      <p class="eyebrow">先为回忆找个位置</p><h2>这样整理，可以吗？</h2><p class="muted">先看规划和目录，再观看归档预览。最后一次确认后，Agent 才会真正操作网盘。</p>
+      <ol id="rules" class="rules"></ol><div id="scope" class="scope"></div><button id="logic-next">认可整理思路，查看文件夹 <span>→</span></button>
+    </section>
+    <section id="step2" class="panel" hidden>
+      <p class="eyebrow">归档后的样子</p><h2>每一份素材，都有去处。</h2><p id="folder-summary" class="muted"></p><div id="tree" class="tree"></div>
+      <div class="actions"><button id="plan-back" class="secondary">返回调整思路</button><button id="preview">目录没问题，观看整理预览 →</button></div>
+    </section>
+    <section id="step3" hidden>
+      <div class="scene-heading"><div><p class="eyebrow">FROM CHAOS TO ORDER</p><h2 id="animation-title">让回忆慢慢归位。</h2></div><button id="replay" class="secondary" hidden>重播预览 ↻</button></div>
+      <p id="sample-note" class="muted"></p>
+      <div id="scene" class="scene"><div id="left-folders" class="folder-column"></div><div id="globe" class="globe"><div class="globe-glow"></div><div id="particles"></div><div class="globe-caption"><b id="preview-count">0</b><span>项素材预览</span></div></div><div id="right-folders" class="folder-column"></div></div>
+      <div class="preview-progress"><div id="progress-bar"></div></div>
+      <div id="final" class="final" hidden><div><h3>预览结束，接下来才是真实整理。</h3><p id="confirm-scope" class="muted"></p></div><button id="confirm">正式确认以上归类，开始整理网盘</button></div>
+      <div id="job" class="job" hidden aria-live="polite"><span class="pill" id="job-label"></span><h3 id="job-phase"></h3><p id="job-counts"></p><p id="job-error"></p><p id="job-notice" class="muted"></p><a id="result-link" target="_blank" rel="noopener noreferrer" hidden>查看网盘整理结果 ↗</a><div id="manual" hidden><p>网页已经保存确认。请将以下指令发给当前 Agent，继续真实整理。</p><textarea id="command" readonly aria-label="发送给 Agent 的指令"></textarea><button id="copy" class="secondary">复制指令</button></div><small id="request"></small></div>
+    </section>
+    <p id="error" class="error" role="alert"></p>
+  </main>
+  <footer>规划 · 预览 · 确认 · 真实归档 <span>你的素材只留在本地工作区和自己的网盘</span></footer>
+</body></html>

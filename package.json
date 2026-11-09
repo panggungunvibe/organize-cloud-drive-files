@@ -1,0 +1,10 @@
+{
+  "name": "organize-cloud-drive-files",
+  "version": "1.0.0",
+  "description": "整理网盘文件：夸克连接检查、HTML 分类预览、Agent 确认执行",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": {"node": ">=20"},
+  "scripts": {"test": "node --test tests/*.test.mjs", "demo": "node scripts/demo.mjs --dir .demo", "package": "node scripts/package.mjs"}
+}
